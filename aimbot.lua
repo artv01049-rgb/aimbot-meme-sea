@@ -3,7 +3,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "Silent Aim - Meme Sea",
     LoadingTitle = "Carregando...",
-    LoadingSubtitle = "por seu nome",
+    LoadingSubtitle = "ART",
     ConfigurationSaving = { Enabled = false },
     Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
     KeySystem = false
