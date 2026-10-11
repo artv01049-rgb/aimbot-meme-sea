@@ -3,7 +3,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "Silent Aim - Meme Sea",
     LoadingTitle = "Carregando...",
-    LoadingSubtitle = "ART",
+    LoadingSubtitle = "ART_VX",
     ConfigurationSaving = { Enabled = false },
     Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
     KeySystem = false
@@ -23,7 +23,6 @@ local TeamCheck = false
 local FOV = 150
 local MAX_DISTANCE = 600
 local RELEASE_DELAY = 0.15
-local StreamerMode = false
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
@@ -241,78 +240,60 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-local RayfieldGui = nil
+MainTab:CreateSection("Silent Aim")
 
-local function FindRayfieldGui()
-    local ok, children = pcall(function()
-        return game:GetService("CoreGui"):GetChildren()
-    end)
-    if ok then
-        for _, obj in ipairs(children) do
-            if obj:IsA("ScreenGui") and obj.Name:lower():find("rayfield") then
-                return obj
-            end
+MainTab:CreateToggle({
+    Name = "Ativar Silent Aim",
+    CurrentValue = false,
+    Flag = "SilentAimToggle",
+    Callback = function(value)
+        SilentAimEnabled = value
+        if value then
+            InstallHooks()
+            task.defer(RefreshTarget)
+        else
+            aiming = false
+            cachedPart = nil
+            cachedPos = nil
+            cachedCFrame = nil
+            cachedUnitRay = nil
+            cachedRayInfo = nil
         end
-    end
-    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-    if pg then
-        for _, obj in ipairs(pg:GetChildren()) do
-            if obj:IsA("ScreenGui") and obj.Name:lower():find("rayfield") then
-                return obj
-            end
-        end
-    end
-    return nil
-end
+    end,
+})
 
-task.spawn(function()
-    for _ = 1, 10 do
-        RayfieldGui = FindRayfieldGui()
-        if RayfieldGui then return end
-        task.wait(0.2)
-    end
-end)
+MainTab:CreateToggle({
+    Name = "Verificar Time",
+    CurrentValue = false,
+    Flag = "TeamCheckToggle",
+    Callback = function(value)
+        TeamCheck = value
+    end,
+})
 
-local panicGui = Instance.new("ScreenGui")
-panicGui.Name = "MemeSeaStreamerPanic"
-panicGui.ResetOnSpawn = false
-panicGui.IgnoreGuiInset = true
-panicGui.DisplayOrder = 2147483647
-panicGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+MainTab:CreateSlider({
+    Name = "FOV",
+    Range = {50, 400},
+    Increment = 10,
+    Suffix = "px",
+    CurrentValue = 150,
+    Flag = "FOVSlider",
+    Callback = function(value)
+        FOV = value
+    end,
+})
 
-local parentOk = pcall(function()
-    panicGui.Parent = game:GetService("CoreGui")
-end)
-if not parentOk then
-    panicGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-end
-
-local panicButton = Instance.new("TextButton")
-panicButton.Name = "PanicBtn"
-panicButton.Size = UDim2.fromOffset(28, 28)
-panicButton.Position = UDim2.new(1, -38, 1, -38)
-panicButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-panicButton.BackgroundTransparency = 0.8
-panicButton.BorderSizePixel = 0
-panicButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-panicButton.Text = "×"
-panicButton.TextSize = 18
-panicButton.Font = Enum.Font.GothamBold
-panicButton.AutoButtonColor = false
-panicButton.Visible = false
-panicButton.Parent = panicGui
-
-local panicCorner = Instance.new("UICorner")
-panicCorner.CornerRadius = UDim.new(1, 0)
-panicCorner.Parent = panicButton
-
-local panicStroke = Instance.new("UIStroke")
-panicStroke.Thickness = 1
-panicStroke.Color = Color3.fromRGB(255, 255, 255)
-panicStroke.Transparency = 0.7
-panicStroke.Parent = panicButton
-
-local function SetStreamerMode(state)
+MainTab:CreateSlider({
+    Name = "Distancia Maxima",
+    Range = {50, 800},
+    Increment = 25,
+    Suffix = " studs",
+    CurrentValue = 600,
+    Flag = "MaxDistSlider",
+    Callback = function(value)
+        MAX_DISTANCE = value
+    end,
+})ction SetStreamerMode(state)
     StreamerMode = state
     if not RayfieldGui then
         RayfieldGui = FindRayfieldGui()
