@@ -14,7 +14,6 @@ local MainTab = Window:CreateTab("Principal", nil)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
-local VirtualUser = game:GetService("VirtualUser")
 
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
@@ -27,10 +26,9 @@ local RELEASE_DELAY = 0.15
 
 local HitboxEnabled = true
 local ShowHitbox = false
-local HITBOX_SIZE = 30
+local HITBOX_SIZE = 37
 local originalData = {}
 
-local PawComboEnabled = true
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local CurrentCamera = Workspace.CurrentCamera
@@ -231,37 +229,8 @@ local function EndAim()
     end)
 end
 
-local function PressKey(keyCode)
-    pcall(function()
-        keypress(keyCode)
-        task.wait(0.05)
-        keyrelease(keyCode)
-    end)
-end
-
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    
-    if input.KeyCode == Enum.KeyCode.F and PawComboEnabled then
-        task.spawn(function()
-            task.wait(0.35)
-            if cachedPart and cachedPart.Parent then
-                local myChar = LocalPlayer.Character
-                if myChar then
-                    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-                    if myHRP then
-                        local dist = (cachedPart.Position - myHRP.Position).Magnitude
-                        if dist <= 10 then
-                            PressKey(Enum.KeyCode.C)
-                            task.wait(0.2)
-                            PressKey(Enum.KeyCode.V)
-                        end
-                    end
-                end
-            end
-        end)
-    end
-
     if not SilentAimEnabled then return end
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
@@ -410,24 +379,13 @@ MainTab:CreateToggle({
 
 MainTab:CreateSlider({
     Name = "Tamanho da Hitbox",
-    Range = {5, 40},
+    Range = {5, 50},
     Increment = 1,
     Suffix = " studs",
-    CurrentValue = 30,
+    CurrentValue = 37,
     Flag = "HitboxSizeSlider",
     Callback = function(value)
         HITBOX_SIZE = value
-    end,
-})
-
-MainTab:CreateSection("Paw Power Combo")
-
-MainTab:CreateToggle({
-    Name = "Ativar Auto Combo (F -> C -> V)",
-    CurrentValue = true,
-    Flag = "PawComboToggle",
-    Callback = function(value)
-        PawComboEnabled = value
     end,
 })
 
