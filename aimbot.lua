@@ -14,21 +14,23 @@ local MainTab = Window:CreateTab("Principal", nil)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
 
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
-local SilentAimEnabled = false
+local SilentAimEnabled = true
 local TeamCheck = false
-local FOV = 150
+local FOV = 220
 local MAX_DISTANCE = 600
 local RELEASE_DELAY = 0.15
 
-local HitboxEnabled = false
+local HitboxEnabled = true
 local ShowHitbox = false
-local HITBOX_SIZE = 15
+local HITBOX_SIZE = 30
 local originalData = {}
 
+local PawComboEnabled = true
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local CurrentCamera = Workspace.CurrentCamera
@@ -229,8 +231,37 @@ local function EndAim()
     end)
 end
 
+local function PressKey(keyCode)
+    pcall(function()
+        keypress(keyCode)
+        task.wait(0.05)
+        keyrelease(keyCode)
+    end)
+end
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
+    
+    if input.KeyCode == Enum.KeyCode.F and PawComboEnabled then
+        task.spawn(function()
+            task.wait(0.35)
+            if cachedPart and cachedPart.Parent then
+                local myChar = LocalPlayer.Character
+                if myChar then
+                    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+                    if myHRP then
+                        local dist = (cachedPart.Position - myHRP.Position).Magnitude
+                        if dist <= 10 then
+                            PressKey(Enum.KeyCode.C)
+                            task.wait(0.2)
+                            PressKey(Enum.KeyCode.V)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
     if not SilentAimEnabled then return end
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
@@ -306,7 +337,7 @@ MainTab:CreateSection("Silent Aim")
 
 MainTab:CreateToggle({
     Name = "Ativar Silent Aim",
-    CurrentValue = false,
+    CurrentValue = true,
     Flag = "SilentAimToggle",
     Callback = function(value)
         SilentAimEnabled = value
@@ -338,7 +369,7 @@ MainTab:CreateSlider({
     Range = {50, 400},
     Increment = 10,
     Suffix = "px",
-    CurrentValue = 150,
+    CurrentValue = 220,
     Flag = "FOVSlider",
     Callback = function(value)
         FOV = value
@@ -361,7 +392,7 @@ MainTab:CreateSection("Hitbox Expander")
 
 MainTab:CreateToggle({
     Name = "Ativar Hitbox Expander",
-    CurrentValue = false,
+    CurrentValue = true,
     Flag = "HitboxToggle",
     Callback = function(value)
         HitboxEnabled = value
@@ -379,12 +410,25 @@ MainTab:CreateToggle({
 
 MainTab:CreateSlider({
     Name = "Tamanho da Hitbox",
-    Range = {5, 30},
+    Range = {5, 40},
     Increment = 1,
     Suffix = " studs",
-    CurrentValue = 15,
+    CurrentValue = 30,
     Flag = "HitboxSizeSlider",
     Callback = function(value)
         HITBOX_SIZE = value
     end,
 })
+
+MainTab:CreateSection("Paw Power Combo")
+
+MainTab:CreateToggle({
+    Name = "Ativar Auto Combo (F -> C -> V)",
+    CurrentValue = true,
+    Flag = "PawComboToggle",
+    Callback = function(value)
+        PawComboEnabled = value
+    end,
+})
+
+InstallHooks()
