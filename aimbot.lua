@@ -24,6 +24,11 @@ local FOV = 150
 local MAX_DISTANCE = 600
 local RELEASE_DELAY = 0.15
 
+local HitboxEnabled = false
+local ShowHitbox = false
+local HITBOX_SIZE = 15
+local originalData = {}
+
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local CurrentCamera = Workspace.CurrentCamera
@@ -240,6 +245,63 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+task.spawn(function()
+    while task.wait(0.2) do
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            local char = player.Character
+            if char then
+                local parts = {char:FindFirstChild("UpperTorso"), char:FindFirstChild("LowerTorso"), char:FindFirstChild("Torso")}
+                
+                for _, part in pairs(parts) do
+                    if part then
+                        if HitboxEnabled then
+                            if not originalData[part] then
+                                originalData[part] = {
+                                    Size = part.Size,
+                                    Transparency = part.Transparency,
+                                    Color = part.Color,
+                                    CanCollide = part.CanCollide,
+                                    Massless = part.Massless
+                                }
+                            end
+                            
+                            part.Size = Vector3.new(HITBOX_SIZE, HITBOX_SIZE, HITBOX_SIZE)
+                            part.CanCollide = false
+                            part.Massless = true
+                            
+                            if ShowHitbox then
+                                part.Transparency = 0.5
+                                part.Color = Color3.fromRGB(255, 0, 0)
+                            else
+                                part.Transparency = 1
+                            end
+                            
+                        else
+                            if originalData[part] then
+                                part.Size = originalData[part].Size
+                                part.Transparency = originalData[part].Transparency
+                                part.Color = originalData[part].Color
+                                part.CanCollide = originalData[part].CanCollide
+                                part.Massless = originalData[part].Massless
+                                originalData[part] = nil
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if not HitboxEnabled and next(originalData) ~= nil then
+            for part, _ in pairs(originalData) do
+                if not part.Parent then
+                    originalData[part] = nil
+                end
+            end
+        end
+    end
+end)
+
 MainTab:CreateSection("Silent Aim")
 
 MainTab:CreateToggle({
@@ -292,5 +354,37 @@ MainTab:CreateSlider({
     Flag = "MaxDistSlider",
     Callback = function(value)
         MAX_DISTANCE = value
+    end,
+})
+
+MainTab:CreateSection("Hitbox Expander")
+
+MainTab:CreateToggle({
+    Name = "Ativar Hitbox Expander",
+    CurrentValue = false,
+    Flag = "HitboxToggle",
+    Callback = function(value)
+        HitboxEnabled = value
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "Mostrar Hitbox (Visual)",
+    CurrentValue = false,
+    Flag = "ShowHitboxToggle",
+    Callback = function(value)
+        ShowHitbox = value
+    end,
+})
+
+MainTab:CreateSlider({
+    Name = "Tamanho da Hitbox",
+    Range = {5, 30},
+    Increment = 1,
+    Suffix = " studs",
+    CurrentValue = 15,
+    Flag = "HitboxSizeSlider",
+    Callback = function(value)
+        HITBOX_SIZE = value
     end,
 })
