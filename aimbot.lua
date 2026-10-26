@@ -29,6 +29,8 @@ local ShowHitbox = false
 local HITBOX_SIZE = 37
 local originalData = {}
 
+local ImmunePlayers = {}
+
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local CurrentCamera = Workspace.CurrentCamera
@@ -79,6 +81,7 @@ local function FindClosestPlayer()
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
+        if ImmunePlayers[player.UserId] then continue end
         if TeamCheck and player.Team == LocalPlayer.Team then continue end
 
         local character = player.Character
@@ -252,7 +255,7 @@ task.spawn(function()
             local char = player.Character
             if char then
                 local parts = {char:FindFirstChild("UpperTorso"), char:FindFirstChild("LowerTorso"), char:FindFirstChild("Torso")}
-                
+
                 for _, part in pairs(parts) do
                     if part then
                         if HitboxEnabled then
@@ -265,18 +268,18 @@ task.spawn(function()
                                     Massless = part.Massless
                                 }
                             end
-                            
+
                             part.Size = Vector3.new(HITBOX_SIZE, HITBOX_SIZE, HITBOX_SIZE)
                             part.CanCollide = false
                             part.Massless = true
-                            
+
                             if ShowHitbox then
                                 part.Transparency = 0.5
                                 part.Color = Color3.fromRGB(255, 0, 0)
                             else
                                 part.Transparency = 1
                             end
-                            
+
                         else
                             if originalData[part] then
                                 part.Size = originalData[part].Size
@@ -291,7 +294,7 @@ task.spawn(function()
                 end
             end
         end
-        
+
         if not HitboxEnabled and next(originalData) ~= nil then
             for part, _ in pairs(originalData) do
                 if not part.Parent then
@@ -299,6 +302,71 @@ task.spawn(function()
                 end
             end
         end
+    end
+end)
+
+MainTab:CreateSection("Sistema de Imunes")
+
+local PlayerDropdown
+
+local function UpdatePlayerList()
+    local newOptions = {}
+    local currentImmune = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local str = p.DisplayName .. " / " .. p.Name
+            table.insert(newOptions, str)
+            if ImmunePlayers[p.UserId] then
+                table.insert(currentImmune, str)
+            end
+        end
+    end
+
+    if PlayerDropdown then
+        pcall(function()
+            PlayerDropdown:Refresh(newOptions, currentImmune)
+        end)
+    end
+end
+
+PlayerDropdown = MainTab:CreateDropdown({
+    Name = "Jogadores (Digite para Pesquisar)",
+    Options = {},
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "PlayerSelect",
+    Callback = function(options)
+        table.clear(ImmunePlayers)
+        for _, str in ipairs(options) do
+            local name = string.match(str, " / (.*)")
+            if name then
+                local p = Players:FindFirstChild(name)
+                if p then
+                    ImmunePlayers[p.UserId] = true
+                end
+            end
+        end
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Tirar Imunes Selecionados",
+    Callback = function()
+        PlayerDropdown:Set({})
+        Rayfield:Notify({
+            Title = "Imunes",
+            Content = "Selecao limpa!",
+            Duration = 3
+        })
+    end,
+})
+
+task.spawn(function()
+    task.wait(1)
+    UpdatePlayerList()
+    while task.wait(5) do
+        UpdatePlayerList()
     end
 end)
 
