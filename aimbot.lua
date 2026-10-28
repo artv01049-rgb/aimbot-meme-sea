@@ -30,6 +30,7 @@ local HITBOX_SIZE = 37
 local originalData = {}
 
 local ImmunePlayers = {}
+local FocusPlayers = {}
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
@@ -67,6 +68,7 @@ end
 local function FindClosestPlayer()
     local closest = nil
     local shortest = FOV
+    local hasFocus = next(FocusPlayers) ~= nil
 
     local refX, refY
     if isMobile then
@@ -82,6 +84,7 @@ local function FindClosestPlayer()
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if ImmunePlayers[player.UserId] then continue end
+        if hasFocus and not FocusPlayers[player.UserId] then continue end
         if TeamCheck and player.Team == LocalPlayer.Team then continue end
 
         local character = player.Character
@@ -255,10 +258,11 @@ task.spawn(function()
             local char = player.Character
             if char then
                 local parts = {char:FindFirstChild("UpperTorso"), char:FindFirstChild("LowerTorso"), char:FindFirstChild("Torso")}
+                local isImmune = ImmunePlayers[player.UserId]
 
                 for _, part in pairs(parts) do
                     if part then
-                        if HitboxEnabled then
+                        if HitboxEnabled and not isImmune then
                             if not originalData[part] then
                                 originalData[part] = {
                                     Size = part.Size,
@@ -305,47 +309,56 @@ task.spawn(function()
     end
 end)
 
-MainTab:CreateSection("Sistema de Imunes")
-
 local PlayerDropdown
+local FocusDropdown
 
 local function UpdatePlayerList()
     local newOptions = {}
     local currentImmune = {}
+    local currentFocus = {}
 
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
             local str = p.DisplayName .. " / " .. p.Name
             table.insert(newOptions, str)
+            
             if ImmunePlayers[p.UserId] then
                 table.insert(currentImmune, str)
+            end
+            if FocusPlayers[p.UserId] then
+                table.insert(currentFocus, str)
             end
         end
     end
 
     if PlayerDropdown then
-        pcall(function()
-            PlayerDropdown:Refresh(newOptions, currentImmune)
-        end)
+        pcall(function() PlayerDropdown:Refresh(newOptions, currentImmune) end)
+    end
+    if FocusDropdown then
+        pcall(function() FocusDropdown:Refresh(newOptions, currentFocus) end)
     end
 end
 
+MainTab:CreateSection("Sistema de Imunes")
+
 PlayerDropdown = MainTab:CreateDropdown({
-    Name = "Jogadores (Digite para Pesquisar)",
+    Name = "Jogadores Imunes",
     Options = {},
     CurrentOption = {},
     MultipleOptions = true,
     Flag = "PlayerSelect",
     Callback = function(options)
-        table.clear(ImmunePlayers)
+        local tempImmune = {}
         for _, str in ipairs(options) do
-            local name = string.match(str, " / (.*)")
-            if name then
-                local p = Players:FindFirstChild(name)
-                if p then
-                    ImmunePlayers[p.UserId] = true
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and str == (p.DisplayName .. " / " .. p.Name) then
+                    tempImmune[p.UserId] = true
+                    break
                 end
             end
+        end
+        if next(tempImmune) ~= nil or next(options) == nil then
+            ImmunePlayers = tempImmune
         end
     end,
 })
@@ -354,11 +367,41 @@ MainTab:CreateButton({
     Name = "Tirar Imunes Selecionados",
     Callback = function()
         PlayerDropdown:Set({})
-        Rayfield:Notify({
-            Title = "Imunes",
-            Content = "Selecao limpa!",
-            Duration = 3
-        })
+        ImmunePlayers = {}
+        Rayfield:Notify({ Title = "Imunes", Content = "Selecao limpa!", Duration = 3 })
+    end,
+})
+
+MainTab:CreateSection("Sistema de Focus")
+
+FocusDropdown = MainTab:CreateDropdown({
+    Name = "Jogadores Focus (So mira neles)",
+    Options = {},
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "FocusSelect",
+    Callback = function(options)
+        local tempFocus = {}
+        for _, str in ipairs(options) do
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and str == (p.DisplayName .. " / " .. p.Name) then
+                    tempFocus[p.UserId] = true
+                    break
+                end
+            end
+        end
+        if next(tempFocus) ~= nil or next(options) == nil then
+            FocusPlayers = tempFocus
+        end
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Limpar Focus Selecionados",
+    Callback = function()
+        FocusDropdown:Set({})
+        FocusPlayers = {}
+        Rayfield:Notify({ Title = "Focus", Content = "Selecao limpa!", Duration = 3 })
     end,
 })
 
